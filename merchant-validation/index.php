@@ -31,8 +31,7 @@ $response = curl_exec($ch);
 if($response === false)
 {
     header('Content-Type: application/json');
-    $error_message = curl_strerror($curl_errno($ch));
-    echo json_encode(['curlError' => curl_error($ch), 'curl_strerror' => $error_message]);
+    echo json_encode(['curlError' => curl_error($ch)]); 
 }
 
 // close cURL resource, and free up system resources

@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function() {
     appButton.style.display = "none";
     
     if (window.ApplePaySession && ApplePaySession.canMakePayments()) {
-        appButton.style.display = "inline-flex";
+        appButton.style.display = "inline-block";
     }
         
 
