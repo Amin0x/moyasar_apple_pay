@@ -6,44 +6,89 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApplePAY</title>
-   
-       
-    <script src="https://applepay.cdn-apple.com/jsapi/v1/apple-pay-sdk.js"></script>
-
     <style>
-    apple-pay-button {
-    --apple-pay-button-width: 140px;
-    --apple-pay-button-height: 30px;
-    --apple-pay-button-border-radius: 5px;
-    --apple-pay-button-padding: 5px 0px;
-    }
-    </style>   
-       
+        @supports (-webkit-appearance: -apple-pay-button) { 
+            .apple-pay-button {
+                display: inline-block;
+                -webkit-appearance: -apple-pay-button;
+            }
+            .apple-pay-button-black {
+                -apple-pay-button-style: black;
+            
+            }
+            .apple-pay-button-white {
+                -apple-pay-button-style: white;
+            }
+            .apple-pay-button-white-with-line {
+                -apple-pay-button-style: white-outline;
+            }
+        }
 
-   
+        @supports not (-webkit-appearance: -apple-pay-button) {
+            .apple-pay-button {
+                display: inline-block;
+                background-size: 100% 60%;
+                background-repeat: no-repeat;
+                background-position: 50% 50%;
+                border-radius: 5px;
+                padding: 0px;
+                box-sizing: border-box;
+                min-width: 200px;
+                min-height: 32px;
+                max-height: 64px;      
+            }
+            .apple-pay-button-black {
+                background-image: -webkit-named-image(apple-pay-logo-white);
+                background-color: black;
+            }
+            .apple-pay-button-white {
+                background-image: -webkit-named-image(apple-pay-logo-black);
+                background-color: white;
+            }
+            .apple-pay-button-white-with-line {
+                background-image: -webkit-named-image(apple-pay-logo-black);
+                background-color: white;
+                border: .5px solid black;
+            } 
+        }
+        
+
+    </style>
 </head>
 <body>
-<apple-pay-button buttonstyle="black" type="buy" locale="en-US"></apple-pay-button>
+
+    
+
+<div class="apple-pay-button apple-pay-button-white"></div>
+
+<div class="apple-pay-button apple-pay-button-black"></div>
+
+<div class="apple-pay-button apple-pay-button-white-with-line"></div>
+
+
 <script>
 
 
 
 document.addEventListener("DOMContentLoaded", function() {
  
+    //we use only one button
+    const appButton = document.querySelectorAll('.apple-pay-button')[0];
+    appButton.style.display = "none";
+    
+    if (window.ApplePaySession && ApplePaySession.canMakePayments()) {
+        appButton.style.display = "inline-flex";
+    }
+        
 
-    // if (window.ApplePaySession && ApplePaySession.canMakePayments()) {
-    //     let el = document.querySelector('apple-pay-warrper');
-    //     el.classList.remove('hide');
-    // }
-
-    document.querySelector('.apple-pay-button-with-text').addEventListener('click', function () {
+    appButton.addEventListener('click', function () {
         const request = {
             currencyCode: 'SAR',
             countryCode: 'SA',
             supportedCountries: ['SA'],
             total: { label: "My Awesome Shop", amount: '1.00' },
             supportedNetworks: ['masterCard', 'visa', 'mada'],
-            merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit']
+            merchantCapabilities: ['supports3DS', /*'supportsCredit', 'supportsDebit'*/]
         };
 
 
@@ -67,11 +112,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
         session.onpaymentauthorized = event => {
             const token = event.payment.token;
-    
+            const api_token = 'pk_live_2Hr3k1KnKmQda8DdS9Pkb8Wh9uG59ao8Aoja8Fvm';
+
             let body = {
                 'amount': 100, //  Halalas 
                 'description': 'My Awsome Order #1234',
-                'publishable_api_key': 'pk_live_2Hr3k1KnKmQda8DdS9Pkb8Wh9uG59ao8Aoja8Fvm',
+                'publishable_api_key': api_token,
                 'source': {
                     'type': 'applepay',
                     'token': token
@@ -81,11 +127,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
             fetch('https://api.moyasar.com/v1/payments', {
                 method: 'post',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + api_token },
                 body: JSON.stringify(body)
             })
             .then(response => response.json())
             .then(payment => {
+                console.log('moyasar payment api response: ', payment);
                 if (!payment.id) {
                     // TODO: Handle validation or API authorization error
                     // session.completePayment({
@@ -119,6 +166,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     status: ApplePaySession.STATUS_FAILURE,
                     errors: [ error.toString() ]
                 });
+
+                console.log('moyasar payment api error: ', error);
             });
         }
     
