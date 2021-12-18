@@ -16,8 +16,8 @@ $headers = [
 ];
 
 curl_setopt($ch, CURLOPT_URL, $json_post->validationUrl);
-curl_setopt($ch, CURLOPT_SSLCERT, './applepay_includes/ApplePay.crt.pem');
-curl_setopt($ch, CURLOPT_SSLKEY, './applepay_includes/ApplePay.key.pem');
+curl_setopt($ch, CURLOPT_SSLCERT, './merchant_id.pem');
+curl_setopt($ch, CURLOPT_SSLKEY, './key.key');
 //curl_setopt($ch, CURLOPT_SSLKEYPASSWD, '');
 //curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
 //curl_setopt($ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1_2');
