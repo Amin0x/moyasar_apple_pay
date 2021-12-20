@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function() {
             currencyCode: 'SAR',
             countryCode: 'SA',
             supportedCountries: ['SA'],
-            total: { label: "My Awesome Shop", amount: '1.00' },
+            total: { label: "My Awesome Shop", amount: '1.00', type: 'final' },
             supportedNetworks: ['masterCard', 'visa', 'mada'],
             merchantCapabilities: ['supports3DS', /*'supportsCredit', 'supportsDebit'*/]
         };
@@ -97,7 +97,8 @@ document.addEventListener("DOMContentLoaded", function() {
         session.onvalidatemerchant = event => {
             let merchantBackendUrl = 'https://ets.sa/merchant-validation';
             let body = {
-                'validationUrl': event.validationURL
+                // 'validationUrl': event.validationURL
+                "validationUrl": "https://apple-pay-gateway.apple.com/paymentservices/paymentSession"
             };
 
             fetch(merchantBackendUrl, {
@@ -127,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             fetch('https://api.moyasar.com/v1/payments', {
                 method: 'post',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + api_token },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + api_token + ':' },
                 body: JSON.stringify(body)
             })
             .then(response => response.json())
