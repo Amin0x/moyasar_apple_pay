@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function() {
             countryCode: 'SA',
             total: { label: "My Awesome Shop", amount: '1.00', type: 'final' },
             supportedNetworks: ['masterCard', 'visa', 'mada'],
-            merchantCapabilities: ['supports3DS', /*'supportsCredit', 'supportsDebit'*/]
+            merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit']
         };
 
 
@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             fetch('https://api.moyasar.com/v1/payments', {
                 method: 'post',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + api_token + ':' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             })
             .then(response => response.json())
