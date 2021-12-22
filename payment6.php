@@ -65,6 +65,7 @@
 
 <div class="apple-pay-button apple-pay-button-white-with-line"></div>
 
+<div id="error_pay"></div>
 
 <script>
 
@@ -72,26 +73,55 @@
 
 document.addEventListener("DOMContentLoaded", function() {
  
+    
     //we use only one button
     const appButton = document.querySelectorAll('.apple-pay-button')[0];
     appButton.style.display = "none";
     
+    function addError(s){
+        const error_pay =  document.getElementById('error_pay');
+        let e = document.createElement("p");
+        e.innerHTML = s;
+        error_pay.append(e);
+    }
+
+
     if (window.ApplePaySession && ApplePaySession.canMakePayments()) {
         appButton.style.display = "inline-block";
-    }
         
+    } else {
+        addError('Not Supported Version or Card Network');
+    }
+    
+    
 
     appButton.addEventListener('click', function () {
         const request = {
             currencyCode: 'SAR',
             countryCode: 'SA',
-            total: { label: "My Awesome Shop", amount: '1.00', type: 'final' },
-            supportedNetworks: ['masterCard', 'visa', 'mada'],
-            merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit']
+            total: { 
+                label: "My Awesome Shop", 
+                amount: '1.00', 
+                type: 'final' 
+            },
+            supportedNetworks: [
+                'masterCard',
+                 'visa',
+                  'mada'
+                ],
+            merchantCapabilities: [
+                'supports3DS', 
+                'supportsCredit', 
+                'supportsDebit'
+            ]
         };
 
+        if(ApplePaySession.supportedVersion(6)){
+            const session = new ApplePaySession(6, request);
+        } else {
+            const session = new ApplePaySession(3, request);
+        }
 
-        const session = new ApplePaySession(3, request);
 
         session.onvalidatemerchant = event => {
             let merchantBackendUrl = 'https://ets.sa/merchant-validation';
@@ -100,12 +130,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 "validationUrl": "https://apple-pay-gateway.apple.com/paymentservices/paymentSession"
             };
 
+            addError('Response Obj: '+JSON.stringify(event));
+
             fetch(merchantBackendUrl, {
                 method: 'post',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             })
-            .then(response => response.json())
+            .then(response => {
+                response.text().then(text => { addError('Response Obj: '+text) });               
+                return response.json()
+            } )
             .then(merchantSession => session.completeMerchantValidation(merchantSession))
             .catch(error => console.error(error)); // We need to handle the error instead of just logging it to console.
         }
@@ -116,7 +151,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
             let body = {
                 'amount': 100, //  Halalas 
-                'description': 'My Awsome Order #1234',                
+                'description': 'My Awsome Order #1234',
+                'publishable_api_key': api_token,
                 'source': {
                     'type': 'applepay',
                     'token': token
@@ -131,6 +167,7 @@ document.addEventListener("DOMContentLoaded", function() {
             })
             .then(response => response.json())
             .then(payment => {
+                addError('payment Obj dump: '+JSON.stringify(payment));
                 console.log('moyasar payment api response: ', payment);
                 if (!payment.id) {
                     // TODO: Handle validation or API authorization error
@@ -138,6 +175,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     //     status: ApplePaySession.STATUS_FAILURE
                     // });
                     //window.location = ''
+                    addError('payment Obj Error: '+JSON.stringify(payment));
                 }
 
                 if (payment.status != 'paid') {
@@ -148,6 +186,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         ]
                     });
 
+                    addError('payment Obj Error: '+payment.source.message);
                     return;
                 }
 
@@ -165,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     status: ApplePaySession.STATUS_FAILURE,
                     errors: [ error.toString() ]
                 });
-
+                addError('moyasar payment api error: : '+error);
                 console.log('moyasar payment api error: ', error);
             });
         }

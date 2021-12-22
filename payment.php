@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function() {
             countryCode: 'SA',
             total: { label: "My Awesome Shop", amount: '1.00', type: 'final' },
             supportedNetworks: ['masterCard', 'visa', 'mada'],
-            merchantCapabilities: ['supports3DS', /*'supportsCredit', 'supportsDebit'*/]
+            merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit']
         };
 
 
