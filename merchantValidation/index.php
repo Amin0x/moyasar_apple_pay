@@ -15,7 +15,7 @@ $headers = [
     'Content-type: application/json',
 ];
 
-curl_setopt($ch, CURLOPT_URL, $json_post->validationUrl);
+curl_setopt($ch, CURLOPT_URL, $json_post->validationURL);
 curl_setopt($ch, CURLOPT_SSLCERT, './merchant_id.pem');
 curl_setopt($ch, CURLOPT_SSLKEY, './key.key');
 //curl_setopt($ch, CURLOPT_SSLKEYPASSWD, '');
@@ -39,4 +39,4 @@ curl_close($ch);
 
 //header('HTTP/1.1 201 Creatied');
 header('Content-Type: application/json');
-echo $response;
+echo json_encode(json_decode($response));

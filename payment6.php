@@ -4,56 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ApplePAY</title>
-    <style>
-        @supports (-webkit-appearance: -apple-pay-button) { 
-            .apple-pay-button {
-                display: inline-block;
-                -webkit-appearance: -apple-pay-button;
-            }
-            .apple-pay-button-black {
-                -apple-pay-button-style: black;
-            
-            }
-            .apple-pay-button-white {
-                -apple-pay-button-style: white;
-            }
-            .apple-pay-button-white-with-line {
-                -apple-pay-button-style: white-outline;
-            }
-        }
-
-        @supports not (-webkit-appearance: -apple-pay-button) {
-            .apple-pay-button {
-                display: inline-block;
-                background-size: 100% 60%;
-                background-repeat: no-repeat;
-                background-position: 50% 50%;
-                border-radius: 5px;
-                padding: 0px;
-                box-sizing: border-box;
-                min-width: 200px;
-                min-height: 32px;
-                max-height: 64px;      
-            }
-            .apple-pay-button-black {
-                background-image: -webkit-named-image(apple-pay-logo-white);
-                background-color: black;
-            }
-            .apple-pay-button-white {
-                background-image: -webkit-named-image(apple-pay-logo-black);
-                background-color: white;
-            }
-            .apple-pay-button-white-with-line {
-                background-image: -webkit-named-image(apple-pay-logo-black);
-                background-color: white;
-                border: .5px solid black;
-            } 
-        }
-        
-
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -90,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function() {
         appButton.style.display = "inline-block";
         
     } else {
-        addError('Not Supported Version or Card Network');
+        console.log('Not Supported Version or Card Network');
     }
     
     
@@ -111,38 +65,37 @@ document.addEventListener("DOMContentLoaded", function() {
                 ],
             merchantCapabilities: [
                 'supports3DS', 
-                'supportsCredit', 
-                'supportsDebit'
+                'supportsCredit'                
             ]
         };
 
-        if(ApplePaySession.supportedVersion(6)){
-            const session = new ApplePaySession(6, request);
-        } else {
-            const session = new ApplePaySession(3, request);
-        }
+       
+        const session = new ApplePaySession(6, request);
+        
 
 
         session.onvalidatemerchant = event => {
-            let merchantBackendUrl = 'https://ets.sa/merchant-validation';
+           
             let body = {
-                // 'validationUrl': event.validationURL
-                "validationUrl": "https://apple-pay-gateway.apple.com/paymentservices/paymentSession"
+                // 'validationURL': event.validationURL
+                "validationURL": "https://apple-pay-gateway.apple.com/paymentservices/paymentSession"
             };
 
-            addError('Response Obj: '+JSON.stringify(event));
-
-            fetch(merchantBackendUrl, {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
-            .then(response => {
-                response.text().then(text => { addError('Response Obj: '+text) });               
-                return response.json()
-            } )
-            .then(merchantSession => session.completeMerchantValidation(merchantSession))
-            .catch(error => console.error(error)); // We need to handle the error instead of just logging it to console.
+            try {
+                console.log('Response Obj: '+JSON.stringify(event));
+    
+                let response = await fetch('/merchantValidation', {
+                    method: 'post',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+               
+                let merchantSession = await response.json();
+                session.completeMerchantValidation(merchantSession);
+                
+            } catch (error) {
+                console.error(error); // We need to handle the error instead of just logging it to console.
+            }
         }
 
         session.onpaymentauthorized = event => {
@@ -159,23 +112,22 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             };
 
+            try {
+                let response = await fetch('https://api.moyasar.com/v1/payments', {
+                    method: 'post',
+                    headers: { 'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
 
-            fetch('https://api.moyasar.com/v1/payments', {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + api_token + ':' },
-                body: JSON.stringify(body)
-            })
-            .then(response => response.json())
-            .then(payment => {
-                addError('payment Obj dump: '+JSON.stringify(payment));
-                console.log('moyasar payment api response: ', payment);
-                if (!payment.id) {
-                    // TODO: Handle validation or API authorization error
-                    // session.completePayment({
-                    //     status: ApplePaySession.STATUS_FAILURE
-                    // });
-                    //window.location = ''
-                    addError('payment Obj Error: '+JSON.stringify(payment));
+                let payment = await response.json();
+
+                if(!payment || !payment.id){
+                    console.log('moyasar payment api response: ', payment);
+                    session.completePayment({
+                        status: ApplePaySession.STATUS_FAILURE
+                    });
+
+                    return;
                 }
 
                 if (payment.status != 'paid') {
@@ -186,11 +138,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         ]
                     });
 
-                    addError('payment Obj Error: '+payment.source.message);
+                    console.log('payment Obj Error: '+payment.source.message);
                     return;
                 }
-
-                
 
                 session.completePayment({
                     status: ApplePaySession.STATUS_SUCCESS
@@ -198,15 +148,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 //window.location = ''
 				alert('SUCCESS');
-            })
-            .catch(error => {
+            } catch (error) {
                 session.completePayment({
                     status: ApplePaySession.STATUS_FAILURE,
                     errors: [ error.toString() ]
                 });
-                addError('moyasar payment api error: : '+error);
                 console.log('moyasar payment api error: ', error);
-            });
+            }
+
+            
+         
         }
     
 

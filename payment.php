@@ -6,54 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApplePAY</title>
-    <style>
-        @supports (-webkit-appearance: -apple-pay-button) { 
-            .apple-pay-button {
-                display: inline-block;
-                -webkit-appearance: -apple-pay-button;
-            }
-            .apple-pay-button-black {
-                -apple-pay-button-style: black;
-            
-            }
-            .apple-pay-button-white {
-                -apple-pay-button-style: white;
-            }
-            .apple-pay-button-white-with-line {
-                -apple-pay-button-style: white-outline;
-            }
-        }
-
-        @supports not (-webkit-appearance: -apple-pay-button) {
-            .apple-pay-button {
-                display: inline-block;
-                background-size: 100% 60%;
-                background-repeat: no-repeat;
-                background-position: 50% 50%;
-                border-radius: 5px;
-                padding: 0px;
-                box-sizing: border-box;
-                min-width: 200px;
-                min-height: 32px;
-                max-height: 64px;      
-            }
-            .apple-pay-button-black {
-                background-image: -webkit-named-image(apple-pay-logo-white);
-                background-color: black;
-            }
-            .apple-pay-button-white {
-                background-image: -webkit-named-image(apple-pay-logo-black);
-                background-color: white;
-            }
-            .apple-pay-button-white-with-line {
-                background-image: -webkit-named-image(apple-pay-logo-black);
-                background-color: white;
-                border: .5px solid black;
-            } 
-        }
-        
-
-    </style>
+    <link rel="stylesheet" href="css/style.css">  
 </head>
 <body>
 
@@ -68,7 +21,53 @@
 
 <script>
 
+function createPaymentMethodData(){
+    let applepayrequest = {
+        version : 5,
+        merchantIdentifier: 'merchant.sa.ets',
+        merchantCapabilities: ['supports3DS'],
+        supportedNetworks:['mada', 'masterCard', 'visa'],
+        countryCode: "SA",
+        //requiredBillingContactFields:[],
+        //billingContact:{},
+        //requiredShippingContactFields:[],
+        //shippingContact:{},
+        //applicationData:"",
+        //supportedCountries:[],
+        //supportsCouponCode:false,
+        //couponCode:"",
+        //shippingContactEditingMode:{},
+    };
 
+    return [{
+        supportedMethods:'https://apple.com/apple-pay',
+        data: applepayrequest
+    }];
+}
+
+
+function createPaymentDetailsInit(total){
+    return {
+        "total": {
+            "label": "My Merchant",
+            "amount": {
+                "value": total,
+                "currency": "SAR"
+            }
+        }
+    };
+}
+
+function createPaymentOptions(){
+    return {
+        "requestPayerName": false,
+        "requestBillingAddress": false,
+        "requestPayerEmail": false,
+        "requestPayerPhone": false,
+        "requestShipping": false,
+        "shippingType": "shipping"
+    };
+}
 
 document.addEventListener("DOMContentLoaded", function() {
  
@@ -82,36 +81,39 @@ document.addEventListener("DOMContentLoaded", function() {
         
 
     appButton.addEventListener('click', function () {
-        const request = {
-            currencyCode: 'SAR',
-            countryCode: 'SA',
-            total: { label: "My Awesome Shop", amount: '1.00', type: 'final' },
-            supportedNetworks: ['masterCard', 'visa', 'mada'],
-            merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit']
-        };
+        if (!window.PaymentRequest)
+            return;
+  
+        var request = null;
+        request = new PaymentRequest(   createPaymentMethodData(), createPaymentDetailsInit('1.00'), createPaymentOptions() );
 
-
-        const session = new ApplePaySession(6, request);
-
-        session.onvalidatemerchant = event => {
-            let merchantBackendUrl = 'https://ets.sa/merchant-validation';
+        
+        request.onmerchantvalidation  = function(event){
             let body = {
-                // 'validationUrl': event.validationURL
-                "validationUrl": "https://apple-pay-gateway.apple.com/paymentservices/paymentSession"
+                    // 'validationURL': event.validationURL
+                    "validationURL": "https://apple-pay-gateway.apple.com/paymentservices/paymentSession"
             };
 
-            fetch(merchantBackendUrl, {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
-            .then(response => response.json())
-            .then(merchantSession => session.completeMerchantValidation(merchantSession))
-            .catch(error => console.error(error)); // We need to handle the error instead of just logging it to console.
-        }
+            try {
+                console.log('Response Obj: '+JSON.stringify(event));
 
-        session.onpaymentauthorized = event => {
-            const token = event.payment.token;
+                let response = await fetch('/merchantValidation', {
+                    method: 'post',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                let merchantSession = await response.json();
+                event.complete(sessionPromise);
+                
+            } catch (error) {
+                console.error(error); // We need to handle the error instead of just logging it to console.
+            }            
+            
+        }
+    
+        request.show().then(function(paymentresponse){
+            const token = paymentresponse.details.token;
             const api_token = 'pk_live_2Hr3k1KnKmQda8DdS9Pkb8Wh9uG59ao8Aoja8Fvm';
 
             let body = {
@@ -123,58 +125,39 @@ document.addEventListener("DOMContentLoaded", function() {
                     'token': token
                 }
             };
+            
+            try {
+                let response = await fetch('https://api.moyasar.com/v1/payments', {
+                    method: 'post',
+                    headers: { 'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                
+                let payment = await response.json();
 
-
-            fetch('https://api.moyasar.com/v1/payments', {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + api_token + ':' },
-                body: JSON.stringify(body)
-            })
-            .then(response => response.json())
-            .then(payment => {
                 console.log('moyasar payment api response: ', payment);
-                if (!payment.id) {
-                    // TODO: Handle validation or API authorization error
-                    // session.completePayment({
-                    //     status: ApplePaySession.STATUS_FAILURE
-                    // });
-                    //window.location = ''
-                }
 
+                if(!payment || !payment.id){
+                    await paymentresponse.complete("fail");
+                    return;
+                } 
+                
+                
                 if (payment.status != 'paid') {
-                    session.completePayment({
-                        status: ApplePaySession.STATUS_FAILURE,
-                        errors: [
-                            payment.source.message
-                        ]
-                    });
-
+                    await paymentresponse.complete("fail");
                     return;
                 }
-
                 
+                await paymentresponse.complete("success");
+                alert('SUCCESS');
 
-                session.completePayment({
-                    status: ApplePaySession.STATUS_SUCCESS
-                });
+            } catch (error) {
+                console.error(error);
+            }
 
-                //window.location = ''
-				alert('SUCCESS');
-            })
-            .catch(error => {
-                session.completePayment({
-                    status: ApplePaySession.STATUS_FAILURE,
-                    errors: [ error.toString() ]
-                });
-
-                console.log('moyasar payment api error: ', error);
-            });
-        }
-    
+        }).catch(function(error){ console.error(error)});
 
       
-
-        session.begin();
 
     });
 });
