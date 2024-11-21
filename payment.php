@@ -13,9 +13,8 @@
 </div>
 
 <footer>
-        <p>by Amin Omer</p>
-    </footer>
-
-    <script src="js/applepay.js"></script>
+<p>by Amin Omer</p>
+</footer>
+<script src="js/applepay.js"></script>
 </body>
 </html>
