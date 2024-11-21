@@ -1,3 +1,13 @@
+body {
+    margin: 0;
+    height: 100vh;
+}
+
+.content-wrapper {
+    height: 100%;
+}
+
+
 @supports (-webkit-appearance: -apple-pay-button) { 
     .apple-pay-button {
         display: inline-block;
