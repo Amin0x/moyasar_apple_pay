@@ -8,7 +8,14 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="apple-pay-button" id="apple-pay-button"></div>
+    <div class="content-wrapper">
+        <div class="apple-pay-button" id="apple-pay-button"></div>
+    </div>
 
-    <script src="js/applepay.js"></script>  </body>
+    <footer>
+        <p>by Amin Omer</p>
+    </footer>
+
+    <script src="js/applepay.js"></script>
+</body>
 </html>
