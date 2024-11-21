@@ -8,11 +8,11 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="content-wrapper">
-        <div class="apple-pay-button" id="apple-pay-button"></div>
-    </div>
+<div class="content-wrapper">
+<div class="apple-pay-button" id="apple-pay-button"></div>
+</div>
 
-    <footer>
+<footer>
         <p>by Amin Omer</p>
     </footer>
 
