@@ -11,7 +11,6 @@
 <div class="content-wrapper">
 <div class="apple-pay-button" id="apple-pay-button"></div>
 </div>
-
 <footer>
 <p>by Amin Omer</p>
 </footer>
